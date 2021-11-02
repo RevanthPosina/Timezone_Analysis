@@ -1,0 +1,5 @@
+1. Paste the time_zone_analysis folder on Desktop
+2. hadoop fs -get /flumedir/data/tweets_raw/* /home/mangal/Desktop/time_zone_analysis/data #this command is used for collecting all tweets files from hdfs.
+3. Now open the terminal and type 
+
+pig -x local Desktop/time_zone_analysis/script/time_zone_analysis.pig #this command is used for running the script file
