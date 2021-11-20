@@ -1,0 +1,15 @@
+REGISTER 'Desktop/time_zone_analysis/jars/elephant-bird-hadoop-compat-4.1.jar';
+REGISTER 'Desktop/time_zone_analysis/jars/elephant-bird-pig-4.1.jar'; 
+REGISTER 'Desktop/time_zone_analysis/jars/json-simple-1.1.1.jar';
+load_tweets = LOAD 'Desktop/time_zone_analysis/data/' USING com.twitter.elephantbird.pig.load.JsonLoader('-nestedLoad') AS myMap;
+extract_details = FOREACH load_tweets GENERATE myMap#'user' as User,myMap#'id' as id,myMap#'text' as text;
+tokens = foreach extract_details generate User#'time_zone' as tz,id,text;
+flat = foreach tokens generate FLATTEN(tz) as timezone,id,FLATTEN(TOKENIZE(text)) As word;
+dictionary = load 'Desktop/time_zone_analysis/AFINN.txt' using PigStorage('\t') AS(word:chararray,rating:int);
+word_rating = join flat by word left outer, dictionary by word using 'replicated';
+rating = foreach word_rating generate flat::timezone as time_zone,flat::id as id,dictionary::rating as rate;
+word_group = group rating by id;
+avg_rate = foreach word_group generate FLATTEN(rating.time_zone) as place, AVG(rating.rate) as tweet_rating;
+grp = group avg_rate by place;
+fin = foreach grp generate group,AVG(avg_rate.tweet_rating);
+store fin into 'Desktop/time_zone_analysis/output';
